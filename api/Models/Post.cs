@@ -21,5 +21,8 @@ namespace api.Models
 
         [Column("created_at")] // Map 'CreatedAt' to 'created_at'
         public DateTime CreatedAt { get; set; }
+
+        //public User User { get; set; }
+        //public ICollection<Comment> Comments { get; set; }
     }
 }
