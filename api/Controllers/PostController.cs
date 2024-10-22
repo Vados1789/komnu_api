@@ -37,8 +37,9 @@ namespace api.Controllers
             }
             catch (Exception ex)
             {
-                // Log the error (optional) and return a 500 status code
+                // Log the full error details
                 Console.WriteLine($"Error fetching posts: {ex.Message}");
+                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
                 return StatusCode(500, "An internal server error occurred while retrieving posts.");
             }
         }
