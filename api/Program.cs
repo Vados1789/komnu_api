@@ -4,11 +4,6 @@ using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Set default culture (e.g., "en-US") - Will work only if globalization-invariant mode is disabled
-var cultureInfo = new CultureInfo("en-US");
-CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
-CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
-
 // Add services to the container.
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
