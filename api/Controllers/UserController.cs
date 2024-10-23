@@ -41,6 +41,7 @@ namespace api.Controllers
                     UserId = u.UserId,
                     Username = u.Username,
                     Email = u.Email,
+                    PhoneNumber = u.PhoneNumber,
                     ProfilePicture = u.ProfilePicture,
                     Bio = u.Bio,
                     DateOfBirth = u.DateOfBirth
@@ -95,6 +96,7 @@ namespace api.Controllers
                 {
                     Username = createUserDto.Username,
                     Email = createUserDto.Email,
+                    PhoneNumber = createUserDto.PhoneNumber, // Add this line
                     ProfilePicture = profilePicturePath,
                     Bio = createUserDto.Bio,
                     DateOfBirth = createUserDto.DateOfBirth ?? DateTime.MinValue
@@ -112,6 +114,7 @@ namespace api.Controllers
                     UserId = newUser.UserId,
                     Username = newUser.Username,
                     Email = newUser.Email,
+                    PhoneNumber = newUser.PhoneNumber, // Add this line
                     ProfilePicture = newUser.ProfilePicture,
                     Bio = newUser.Bio,
                     DateOfBirth = newUser.DateOfBirth
@@ -148,6 +151,7 @@ namespace api.Controllers
                     UserId = user.UserId,
                     Username = user.Username,
                     Email = user.Email,
+                    PhoneNumber = user.PhoneNumber,
                     ProfilePicture = user.ProfilePicture,
                     Bio = user.Bio,
                     DateOfBirth = user.DateOfBirth
@@ -182,6 +186,7 @@ namespace api.Controllers
 
                 user.Username = updateUserDto.Username ?? user.Username;
                 user.Email = updateUserDto.Email ?? user.Email;
+                user.PhoneNumber = updateUserDto.PhoneNumber ?? user.PhoneNumber;
                 user.ProfilePicture = updateUserDto.ProfilePicture ?? user.ProfilePicture;
                 user.Bio = updateUserDto.Bio ?? user.Bio;
                 user.DateOfBirth = updateUserDto.DateOfBirth ?? user.DateOfBirth;

@@ -22,6 +22,10 @@ namespace api.Models
         [Required] // Email must be provided
         public string Email { get; set; }
 
+        [Column("phone_number")]
+        [StringLength(20)]
+        public string PhoneNumber { get; set; } // Optional
+
         [Column("profile_picture")]
         [StringLength(255)]
         public string ProfilePicture { get; set; } // Optional
