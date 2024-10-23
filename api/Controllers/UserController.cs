@@ -5,7 +5,9 @@ using api.Models;
 using api.DTOs;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace api.Controllers
 {
@@ -14,6 +16,7 @@ namespace api.Controllers
     public class UsersController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly string[] allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
 
         public UsersController(AppDbContext context)
         {
@@ -33,7 +36,6 @@ namespace api.Controllers
                     return NotFound("No users found.");
                 }
 
-                // Convert to DTOs before sending
                 var userDtos = users.ConvertAll(u => new UserDto
                 {
                     UserId = u.UserId,
@@ -55,43 +57,56 @@ namespace api.Controllers
 
         // POST: api/users
         [HttpPost]
-        public async Task<ActionResult<UserDto>> CreateUser([FromBody] CreateUserDto createUserDto)
+        public async Task<ActionResult<UserDto>> CreateUser([FromForm] CreateUserDto createUserDto)
         {
             Console.WriteLine("Hello world");
-            // Log when the method is called and display received data
             Console.WriteLine($"[INFO] Received request to create user with username: {createUserDto.Username}");
 
             try
             {
-                // Log ModelState validation check
                 if (!ModelState.IsValid)
                 {
                     Console.WriteLine("[WARNING] Model state is invalid. Returning BadRequest.");
                     return BadRequest(ModelState);
                 }
 
-                // Log details of the user being created
-                Console.WriteLine($"[INFO] Creating new user: {createUserDto.Username}, Email: {createUserDto.Email}");
+                string profilePicturePath = "";
+                if (createUserDto.ProfilePicture != null)
+                {
+                    var extension = Path.GetExtension(createUserDto.ProfilePicture.FileName).ToLower();
+                    if (!Array.Exists(allowedExtensions, ext => ext == extension))
+                    {
+                        return BadRequest("Unsupported file type. Only .jpg, .jpeg, .png, and .gif are allowed.");
+                    }
+
+                    var fileName = Path.GetRandomFileName() + extension;
+                    var filePath = Path.Combine("images", fileName);
+
+                    Directory.CreateDirectory("images"); // Ensure the directory exists
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await createUserDto.ProfilePicture.CopyToAsync(stream);
+                    }
+
+                    profilePicturePath = $"/images/{fileName}";
+                }
 
                 var newUser = new User
                 {
                     Username = createUserDto.Username,
                     Email = createUserDto.Email,
-                    ProfilePicture = createUserDto.ProfilePicture,
+                    ProfilePicture = profilePicturePath,
                     Bio = createUserDto.Bio,
-                    DateOfBirth = createUserDto.DateOfBirth ?? DateTime.MinValue // Handle null by providing a default value
+                    DateOfBirth = createUserDto.DateOfBirth ?? DateTime.MinValue
                 };
 
-                // Log before saving to the database
                 Console.WriteLine("[INFO] Adding new user to the database...");
 
                 _context.Users.Add(newUser);
                 await _context.SaveChangesAsync();
 
-                // Log after successful save
                 Console.WriteLine($"[SUCCESS] User '{newUser.Username}' created successfully with ID: {newUser.UserId}");
 
-                // Convert to UserDto before returning
                 var userDto = new UserDto
                 {
                     UserId = newUser.UserId,
@@ -102,12 +117,10 @@ namespace api.Controllers
                     DateOfBirth = newUser.DateOfBirth
                 };
 
-                // Return the created user details
                 return CreatedAtAction(nameof(GetUserById), new { id = newUser.UserId }, userDto);
             }
             catch (Exception ex)
             {
-                // Log error details, including inner exception if any
                 Console.WriteLine($"[ERROR] Error creating user: {ex.Message}");
                 if (ex.InnerException != null)
                 {
@@ -130,7 +143,6 @@ namespace api.Controllers
                     return NotFound("User not found.");
                 }
 
-                // Convert to DTO before returning
                 var userDto = new UserDto
                 {
                     UserId = user.UserId,
