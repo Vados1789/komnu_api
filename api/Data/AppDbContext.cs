@@ -25,6 +25,11 @@ namespace api.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Login>()
+                .HasOne(l => l.User)
+                .WithMany()
+                .HasForeignKey(l => l.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
             // Configure the relationship between Post and User
             //modelBuilder.Entity<Post>()
             //    .HasOne(p => p.User) // Each Post has one User

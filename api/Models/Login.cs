@@ -14,6 +14,9 @@ namespace api.Models
         [Column("user_id")]
         public int UserId { get; set; }
 
+        [ForeignKey("UserId")]
+        public User User { get; set; }
+
         [Column("login_type")]
         [StringLength(20)]
         public string LoginType { get; set; }
@@ -35,8 +38,5 @@ namespace api.Models
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; }
-
-        [Column("last_login")]
-        public DateTime LastLogin { get; set; }
     }
 }
