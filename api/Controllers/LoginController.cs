@@ -47,8 +47,40 @@ namespace api.Controllers
                     return Unauthorized("Invalid username or password.");
                 }
 
-                // Successful login
-                return Ok(new { message = "Login successful", userId = userLogin.UserId });
+                // Get user details
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userLogin.UserId);
+                if (user == null)
+                {
+                    return NotFound("User information not found.");
+                }
+
+                // Log full user information in the console
+                Console.WriteLine($"[INFO] User logged in successfully:");
+                Console.WriteLine($"- UserId: {user.UserId}");
+                Console.WriteLine($"- Username: {user.Username}");
+                Console.WriteLine($"- Email: {user.Email}");
+                Console.WriteLine($"- Phone Number: {user.PhoneNumber}");
+                Console.WriteLine($"- Profile Picture: {user.ProfilePicture}");
+                Console.WriteLine($"- Bio: {user.Bio}");
+                Console.WriteLine($"- Date of Birth: {user.DateOfBirth}");
+                Console.WriteLine($"- Created At: {user.CreatedAt}");
+
+                // Successful login response including all user information
+                return Ok(new
+                {
+                    message = "Login successful",
+                    user = new
+                    {
+                        user.UserId,
+                        user.Username,
+                        user.Email,
+                        user.PhoneNumber,
+                        user.ProfilePicture,
+                        user.Bio,
+                        user.DateOfBirth,
+                        user.CreatedAt
+                    }
+                });
             }
             catch (Exception ex)
             {
