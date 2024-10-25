@@ -12,10 +12,16 @@ namespace api.Models
         public int FriendId { get; set; }
 
         [Column("user_id_1")]
+        [ForeignKey(nameof(User1))]
         public int UserId1 { get; set; }
 
+        public User User1 { get; set; }
+
         [Column("user_id_2")]
+        [ForeignKey(nameof(User2))]
         public int UserId2 { get; set; }
+
+        public User User2 { get; set; }
 
         [Column("status")]
         [StringLength(20)]
