@@ -1,8 +1,10 @@
 using api.Data;
 using api.Services;
+using api.DTOs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +15,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
            .LogTo(Console.WriteLine));   // Log to console
 
 // Register EmailService for dependency injection
-builder.Services.AddTransient<EmailService>(); // Add this line
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+builder.Services.AddTransient<EmailService>();
 
 // Add CORS to allow requests from your React Native app
 builder.Services.AddCors(options =>

@@ -8,6 +8,7 @@ using api.Models;
 using api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace api.Controllers
 {
@@ -17,11 +18,13 @@ namespace api.Controllers
     {
         private readonly AppDbContext _context;
         private readonly EmailService _emailService;
+        private readonly ILogger<LoginController> _logger;
 
-        public LoginController(AppDbContext context, EmailService emailService)
+        public LoginController(AppDbContext context, EmailService emailService, ILogger<LoginController> logger)
         {
             _context = context;
             _emailService = emailService;
+            _logger = logger;
         }
 
         // Existing authentication endpoint
@@ -30,7 +33,7 @@ namespace api.Controllers
         {
             try
             {
-                Console.WriteLine($"[INFO] Attempting to authenticate user: {loginRequest.Username}");
+                _logger.LogInformation($"[INFO] Attempting to authenticate user: {loginRequest.Username}");
 
                 var userLogin = await _context.Logins
                     .Include(l => l.User)
@@ -38,19 +41,21 @@ namespace api.Controllers
 
                 if (userLogin == null)
                 {
+                    _logger.LogWarning($"[WARN] User not found: {loginRequest.Username}");
                     return Unauthorized("Invalid username or password.");
                 }
 
                 string hashedPassword = HashPassword(loginRequest.Password);
                 if (userLogin.PasswordHash != hashedPassword)
                 {
+                    _logger.LogWarning($"[WARN] Invalid password for user: {loginRequest.Username}");
                     return Unauthorized("Invalid username or password.");
                 }
 
                 if (userLogin.IsTwoFaEnabled)
                 {
-                    var token = GenerateToken();
-                    var expiresAt = DateTime.UtcNow.AddMinutes(5);
+                    var token = GenerateVerificationCode();
+                    var expiresAt = AdjustToDenmarkTimeZone(DateTime.UtcNow.AddMinutes(5));
 
                     var twoFaToken = new TwoFaToken
                     {
@@ -62,17 +67,19 @@ namespace api.Controllers
                     _context.TwoFaTokens.Add(twoFaToken);
                     await _context.SaveChangesAsync();
 
+                    _logger.LogInformation($"[INFO] Sending 2FA token to email: {userLogin.User.Email}");
+
                     // Send token via email
                     await _emailService.SendEmailAsync(userLogin.User.Email, "Your 2FA Code", $"Your verification code is: {token}");
 
-                    return Ok(new { message = "2FA Required", requiresTwoFa = true, userId = userLogin.UserId });
+                    return Ok(new TwoFaResponseDto { Message = "2FA Required", RequiresTwoFa = true, UserId = userLogin.UserId });
                 }
 
                 return Ok(new { message = "Login successful", userId = userLogin.UserId });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] Authentication error: {ex.Message}");
+                _logger.LogError($"[ERROR] Authentication error: {ex.Message}");
                 return StatusCode(500, "An internal server error occurred.");
             }
         }
@@ -88,6 +95,7 @@ namespace api.Controllers
 
                 if (twoFaToken == null)
                 {
+                    _logger.LogWarning($"[WARN] Invalid or expired 2FA code for user ID: {verifyTwoFaDto.UserId}");
                     return Unauthorized("Invalid or expired 2FA code.");
                 }
 
@@ -95,24 +103,30 @@ namespace api.Controllers
                 _context.TwoFaTokens.Remove(twoFaToken);
                 await _context.SaveChangesAsync();
 
+                _logger.LogInformation($"[INFO] Successful 2FA verification for user ID: {verifyTwoFaDto.UserId}");
                 return Ok(new { message = "2FA Verification successful", userId = verifyTwoFaDto.UserId });
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] Two-Factor Authentication error: {ex.Message}");
+                _logger.LogError($"[ERROR] Two-Factor Authentication error: {ex.Message}");
                 return StatusCode(500, "An internal server error occurred.");
             }
         }
 
-        private string GenerateToken()
+        // New method for generating verification codes
+        private string GenerateVerificationCode(int length = 6)
         {
-            using (var rng = new RNGCryptoServiceProvider())
-            {
-                var tokenData = new byte[4];
-                rng.GetBytes(tokenData);
-                int token = BitConverter.ToUInt16(tokenData, 0) % 1000000; // Generate 6-digit token
-                return token.ToString("D6");
-            }
+            var random = new Random();
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            return new string(Enumerable.Repeat(chars, length)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
+
+        // Adjust time to Denmark's local time (CET/CEST)
+        private DateTime AdjustToDenmarkTimeZone(DateTime utcTime)
+        {
+            var denmarkTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+            return TimeZoneInfo.ConvertTimeFromUtc(utcTime, denmarkTimeZone);
         }
 
         private string HashPassword(string password)
