@@ -113,13 +113,18 @@ namespace api.Controllers
             }
         }
 
-        // New method for generating verification codes
+        // New method for generating numeric verification codes
         private string GenerateVerificationCode(int length = 6)
         {
             var random = new Random();
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            return new string(Enumerable.Repeat(chars, length)
-                .Select(s => s[random.Next(s.Length)]).ToArray());
+            var code = new StringBuilder();
+
+            for (int i = 0; i < length; i++)
+            {
+                code.Append(random.Next(0, 10)); // Generate a random digit between 0 and 9
+            }
+
+            return code.ToString();
         }
 
         // Adjust time to Denmark's local time (CET/CEST)
