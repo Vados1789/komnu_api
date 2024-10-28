@@ -62,11 +62,12 @@ namespace api.Controllers
             return Ok(friends);
         }
 
-        // Endpoint to get a list of all users (for adding friends)
-        [HttpGet("all")]
-        public async Task<ActionResult> GetAllUsers()
+        [HttpGet("all/{userId}")]
+        public async Task<ActionResult> GetAllUsers(int userId)
         {
+            System.Console.WriteLine($"bob {userId}");
             var users = await _context.Users
+                .Where(u => u.UserId != userId)
                 .Select(u => new {
                     u.UserId,
                     u.Username,

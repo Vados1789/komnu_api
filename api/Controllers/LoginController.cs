@@ -27,7 +27,7 @@ namespace api.Controllers
             _logger = logger;
         }
 
-        // Existing authentication endpoint
+        // Authentication endpoint
         [HttpPost("authenticate")]
         public async Task<ActionResult> Authenticate([FromBody] LoginRequestDto loginRequest)
         {
@@ -52,6 +52,7 @@ namespace api.Controllers
                     return Unauthorized("Invalid username or password.");
                 }
 
+                // If 2FA is enabled
                 if (userLogin.IsTwoFaEnabled)
                 {
                     var token = GenerateVerificationCode();
@@ -67,15 +68,24 @@ namespace api.Controllers
                     _context.TwoFaTokens.Add(twoFaToken);
                     await _context.SaveChangesAsync();
 
-                    _logger.LogInformation($"[INFO] Sending 2FA token to email: {userLogin.User.Email}");
-
-                    // Send token via email
                     await _emailService.SendEmailAsync(userLogin.User.Email, "Your 2FA Code", $"Your verification code is: {token}");
 
                     return Ok(new TwoFaResponseDto { Message = "2FA Required", RequiresTwoFa = true, UserId = userLogin.UserId });
                 }
 
-                return Ok(new { message = "Login successful", userId = userLogin.UserId });
+                // If 2FA is not required, send all user information
+                var userData = new UserDto
+                {
+                    UserId = userLogin.User.UserId,
+                    Username = userLogin.User.Username,
+                    Email = userLogin.User.Email,
+                    PhoneNumber = userLogin.User.PhoneNumber,
+                    ProfilePicture = userLogin.User.ProfilePicture,
+                    Bio = userLogin.User.Bio,
+                    DateOfBirth = userLogin.User.DateOfBirth
+                };
+
+                return Ok(new { message = "Login successful", user = userData });
             }
             catch (Exception ex)
             {
@@ -84,7 +94,8 @@ namespace api.Controllers
             }
         }
 
-        // New endpoint to verify 2FA code
+
+        // Verify 2FA code
         [HttpPost("verify-2fa")]
         public async Task<ActionResult> VerifyTwoFa([FromBody] VerifyTwoFaDto verifyTwoFaDto)
         {
@@ -103,8 +114,24 @@ namespace api.Controllers
                 _context.TwoFaTokens.Remove(twoFaToken);
                 await _context.SaveChangesAsync();
 
+                // Return full user data upon successful 2FA verification
+                var user = await _context.Users.FindAsync(verifyTwoFaDto.UserId);
+                if (user == null)
+                {
+                    return NotFound("User not found after 2FA verification.");
+                }
+
+                var userData = new
+                {
+                    userId = user.UserId,
+                    username = user.Username,
+                    email = user.Email,
+                    profilePicture = user.ProfilePicture,
+                    // Add other fields if necessary
+                };
+
                 _logger.LogInformation($"[INFO] Successful 2FA verification for user ID: {verifyTwoFaDto.UserId}");
-                return Ok(new { message = "2FA Verification successful", userId = verifyTwoFaDto.UserId });
+                return Ok(new { message = "2FA Verification successful", user = userData });
             }
             catch (Exception ex)
             {
@@ -113,7 +140,7 @@ namespace api.Controllers
             }
         }
 
-        // New method for generating numeric verification codes
+        // Method to generate a numeric verification code
         private string GenerateVerificationCode(int length = 6)
         {
             var random = new Random();
@@ -121,19 +148,20 @@ namespace api.Controllers
 
             for (int i = 0; i < length; i++)
             {
-                code.Append(random.Next(0, 10)); // Generate a random digit between 0 and 9
+                code.Append(random.Next(0, 10));
             }
 
             return code.ToString();
         }
 
-        // Adjust time to Denmark's local time (CET/CEST)
+        // Adjust UTC time to Denmark time zone
         private DateTime AdjustToDenmarkTimeZone(DateTime utcTime)
         {
             var denmarkTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
             return TimeZoneInfo.ConvertTimeFromUtc(utcTime, denmarkTimeZone);
         }
 
+        // Method to hash passwords
         private string HashPassword(string password)
         {
             using (var sha256 = SHA256.Create())
