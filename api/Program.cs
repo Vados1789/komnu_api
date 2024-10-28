@@ -43,6 +43,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Use static files middleware to serve files from wwwroot
+app.UseStaticFiles();
+
 // Use CORS policy to allow requests from different origins
 app.UseCors("AllowAll");
 
