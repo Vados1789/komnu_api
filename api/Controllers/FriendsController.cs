@@ -23,18 +23,36 @@ namespace api.Controllers
         [HttpGet("requests/{userId}")]
         public async Task<ActionResult> GetFriendRequests(int userId)
         {
-            var friendRequests = await _context.Friends
-                .Where(f => f.UserId2 == userId && f.Status == "Pending")
-                .Include(f => f.User1) // Assuming User1 is the requester
-                .Select(f => new {
-                    FriendId = f.FriendId,
-                    Username = f.User1.Username,
-                    ProfilePicture = f.User1.ProfilePicture,
-                    MutualFriends = GetMutualFriendsCount(userId, f.UserId1)
-                })
-                .ToListAsync();
+            try
+            {
+                // First, retrieve the basic friend request information
+                var friendRequests = await _context.Friends
+                    .Where(f => f.UserId2 == userId && f.Status == "Pending")
+                    .Include(f => f.User1) // Assuming User1 is the requester
+                    .Select(f => new {
+                        FriendId = f.FriendId,
+                        Username = f.User1 != null ? f.User1.Username : "Unknown User",
+                        ProfilePicture = f.User1 != null ? f.User1.ProfilePicture : null,
+                        UserId1 = f.UserId1 // Store the requester UserId for mutual friend calculation
+                    })
+                    .ToListAsync();
 
-            return Ok(friendRequests);
+                // Loop over each friend request to calculate mutual friends
+                var result = friendRequests.Select(f => new {
+                    f.FriendId,
+                    f.Username,
+                    f.ProfilePicture,
+                    MutualFriends = GetMutualFriendsCount(userId, f.UserId1)
+                }).ToList();
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                // Log the detailed error and return a specific error message
+                Console.WriteLine($"[ERROR] Error fetching friend requests for user ID {userId}: {ex.Message}");
+                return StatusCode(500, "An error occurred while fetching friend requests.");
+            }
         }
 
         // Endpoint to get all friends for a user
