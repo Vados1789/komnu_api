@@ -124,23 +124,27 @@ namespace api.Controllers
                 await _context.SaveChangesAsync();
 
                 // Return full user data upon successful 2FA verification
-                var user = await _context.Users.FindAsync(verifyTwoFaDto.UserId);
+                var user = await _context.Users
+                    .Where(u => u.UserId == verifyTwoFaDto.UserId)
+                    .Select(u => new UserDto
+                    {
+                        UserId = u.UserId,
+                        Username = u.Username,
+                        Email = u.Email,
+                        PhoneNumber = u.PhoneNumber,
+                        ProfilePicture = u.ProfilePicture,
+                        Bio = u.Bio,
+                        DateOfBirth = u.DateOfBirth
+                    })
+                    .FirstOrDefaultAsync();
+
                 if (user == null)
                 {
                     return NotFound("User not found after 2FA verification.");
                 }
 
-                var userData = new
-                {
-                    userId = user.UserId,
-                    username = user.Username,
-                    email = user.Email,
-                    profilePicture = user.ProfilePicture,
-                    // Add other fields if necessary
-                };
-
                 _logger.LogInformation($"[INFO] Successful 2FA verification for user ID: {verifyTwoFaDto.UserId}");
-                return Ok(new { message = "2FA Verification successful", user = userData });
+                return Ok(new { message = "2FA Verification successful", user });
             }
             catch (Exception ex)
             {
