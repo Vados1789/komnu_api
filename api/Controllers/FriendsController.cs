@@ -100,6 +100,18 @@ namespace api.Controllers
         [HttpPost("send")]
         public async Task<IActionResult> SendFriendRequest([FromBody] FriendRequestDto request)
         {
+            // Check if a pending or accepted friend request already exists
+            var existingRequest = await _context.Friends
+                .FirstOrDefaultAsync(f =>
+                    ((f.UserId1 == request.UserId1 && f.UserId2 == request.UserId2) ||
+                     (f.UserId1 == request.UserId2 && f.UserId2 == request.UserId1)) &&
+                    (f.Status == "Pending" || f.Status == "Accepted"));
+
+            if (existingRequest != null)
+            {
+                return BadRequest("Friend request already exists or you are already friends.");
+            }
+
             var newFriendRequest = new Friend
             {
                 UserId1 = request.UserId1, // Sender
@@ -111,6 +123,7 @@ namespace api.Controllers
             await _context.SaveChangesAsync();
             return Ok();
         }
+
 
         // Endpoint to confirm a friend request
         [HttpPost("confirm")]

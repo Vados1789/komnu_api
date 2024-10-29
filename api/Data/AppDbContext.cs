@@ -36,6 +36,11 @@ namespace api.Data
                .WithMany()
                .HasForeignKey(f => f.UserId2)
                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Friend>()
+                .Property(f => f.RequestedAt)
+                .HasDefaultValueSql("GETDATE()")
+                .HasColumnType("datetime");
         }
     }
 }
