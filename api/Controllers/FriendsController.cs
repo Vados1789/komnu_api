@@ -162,11 +162,11 @@ namespace api.Controllers
 
         // Endpoint to confirm a friend request
         [HttpPost("confirm")]
-        public async Task<IActionResult> ConfirmFriendRequest([FromBody] int friendId)
+        public async Task<IActionResult> ConfirmFriendRequest([FromBody] FriendRequestActionDto request)
         {
             try
             {
-                var friendRequest = await _context.Friends.FindAsync(friendId);
+                var friendRequest = await _context.Friends.FindAsync(request.FriendId);
                 if (friendRequest != null && friendRequest.Status == "Pending")
                 {
                     friendRequest.Status = "Accepted";
@@ -182,13 +182,13 @@ namespace api.Controllers
             }
         }
 
-        // Endpoint to remove a friend request or an existing friend
+        // RemoveFriendRequest
         [HttpPost("remove")]
-        public async Task<IActionResult> RemoveFriendRequest([FromBody] int friendId)
+        public async Task<IActionResult> RemoveFriendRequest([FromBody] FriendRequestActionDto request)
         {
             try
             {
-                var friendRequest = await _context.Friends.FindAsync(friendId);
+                var friendRequest = await _context.Friends.FindAsync(request.FriendId);
                 if (friendRequest != null)
                 {
                     _context.Friends.Remove(friendRequest);
