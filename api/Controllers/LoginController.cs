@@ -55,6 +55,14 @@ namespace api.Controllers
                 // If 2FA is enabled
                 if (userLogin.IsTwoFaEnabled)
                 {
+                    // Remove any existing tokens only if they exist
+                    var existingTokens = _context.TwoFaTokens.Where(t => t.UserId == userLogin.UserId).ToList();
+                    if (existingTokens.Any())
+                    {
+                        _context.TwoFaTokens.RemoveRange(existingTokens);
+                    }
+
+                    // Generate a new 2FA token and save it to the database
                     var token = GenerateVerificationCode();
                     var expiresAt = AdjustToDenmarkTimeZone(DateTime.UtcNow.AddMinutes(5));
 
@@ -66,8 +74,9 @@ namespace api.Controllers
                     };
 
                     _context.TwoFaTokens.Add(twoFaToken);
-                    await _context.SaveChangesAsync();
+                    await _context.SaveChangesAsync();  // Ensure the token is saved before proceeding
 
+                    // Send the token via email
                     await _emailService.SendEmailAsync(userLogin.User.Email, "Your 2FA Code", $"Your verification code is: {token}");
 
                     return Ok(new TwoFaResponseDto { Message = "2FA Required", RequiresTwoFa = true, UserId = userLogin.UserId });
@@ -93,7 +102,6 @@ namespace api.Controllers
                 return StatusCode(500, "An internal server error occurred.");
             }
         }
-
 
         // Verify 2FA code
         [HttpPost("verify-2fa")]
