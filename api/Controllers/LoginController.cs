@@ -55,11 +55,12 @@ namespace api.Controllers
                 // If 2FA is enabled
                 if (userLogin.IsTwoFaEnabled)
                 {
-                    // Remove any existing tokens only if they exist
+                    // Remove any existing tokens only for this user
                     var existingTokens = _context.TwoFaTokens.Where(t => t.UserId == userLogin.UserId).ToList();
                     if (existingTokens.Any())
                     {
                         _context.TwoFaTokens.RemoveRange(existingTokens);
+                        await _context.SaveChangesAsync(); // Ensure deletion before adding a new token
                     }
 
                     // Generate a new 2FA token and save it to the database

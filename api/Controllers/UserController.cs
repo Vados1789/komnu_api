@@ -60,7 +60,6 @@ namespace api.Controllers
         [HttpPost]
         public async Task<ActionResult<UserDto>> CreateUser([FromForm] CreateUserDto createUserDto)
         {
-            Console.WriteLine("Hello world");
             Console.WriteLine($"[INFO] Received request to create user with username: {createUserDto.Username}");
 
             try
@@ -81,14 +80,19 @@ namespace api.Controllers
                     }
 
                     var fileName = Path.GetRandomFileName() + extension;
-                    var filePath = Path.Combine("images", fileName);
 
-                    Directory.CreateDirectory("images"); // Ensure the directory exists
+                    // Updated to use wwwroot directory
+                    var imagesFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+                    var filePath = Path.Combine(imagesFolder, fileName);
+
+                    Directory.CreateDirectory(imagesFolder); // Ensure the directory exists
+
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {
                         await createUserDto.ProfilePicture.CopyToAsync(stream);
                     }
 
+                    // Set the relative path for web access
                     profilePicturePath = $"/images/{fileName}";
                 }
 
@@ -96,25 +100,22 @@ namespace api.Controllers
                 {
                     Username = createUserDto.Username,
                     Email = createUserDto.Email,
-                    PhoneNumber = createUserDto.PhoneNumber, // Add this line
+                    PhoneNumber = createUserDto.PhoneNumber,
                     ProfilePicture = profilePicturePath,
                     Bio = createUserDto.Bio,
                     DateOfBirth = createUserDto.DateOfBirth ?? DateTime.MinValue
                 };
 
                 Console.WriteLine("[INFO] Adding new user to the database...");
-
                 _context.Users.Add(newUser);
                 await _context.SaveChangesAsync();
-
-                Console.WriteLine($"[SUCCESS] User '{newUser.Username}' created successfully with ID: {newUser.UserId}");
 
                 var userDto = new UserDto
                 {
                     UserId = newUser.UserId,
                     Username = newUser.Username,
                     Email = newUser.Email,
-                    PhoneNumber = newUser.PhoneNumber, // Add this line
+                    PhoneNumber = newUser.PhoneNumber,
                     ProfilePicture = newUser.ProfilePicture,
                     Bio = newUser.Bio,
                     DateOfBirth = newUser.DateOfBirth
