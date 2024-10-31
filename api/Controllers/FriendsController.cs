@@ -35,14 +35,19 @@ namespace api.Controllers
                             .Where(f => (f.UserId1 == userId && f.UserId2 == u.UserId) ||
                                         (f.UserId1 == u.UserId && f.UserId2 == userId))
                             .Select(f => f.Status)
-                            .FirstOrDefault() ?? "None" // If no relation, set as "None"
+                            .FirstOrDefault() ?? "None",
+                        FriendId = _context.Friends
+                            .Where(f => (f.UserId1 == userId && f.UserId2 == u.UserId) ||
+                                        (f.UserId1 == u.UserId && f.UserId2 == userId))
+                            .Select(f => f.FriendId)
+                            .FirstOrDefault()
                     })
                     .ToListAsync();
 
                 Console.WriteLine("All users with friend status being sent to frontend:");
                 foreach (var user in users)
                 {
-                    Console.WriteLine($"UserId: {user.UserId}, Username: {user.Username}, Status: {user.FriendStatus}");
+                    Console.WriteLine($"UserId: {user.UserId}, Username: {user.Username}, Status: {user.FriendStatus}, FriendId: {user.FriendId}");
                 }
 
                 return Ok(users);
@@ -53,6 +58,7 @@ namespace api.Controllers
                 return StatusCode(500, "An error occurred while fetching users with status.");
             }
         }
+
 
         // Endpoint to get friend requests for a user
         [HttpGet("requests/{userId}")]
@@ -220,6 +226,8 @@ namespace api.Controllers
         [HttpPost("remove")]
         public async Task<IActionResult> RemoveFriendRequest([FromBody] FriendRequestActionDto request)
         {
+            Console.WriteLine($"[INFO] Attempting to remove friend with FriendId: {request.FriendId}");
+            System.Console.WriteLine($"request for removing {request}");
             try
             {
                 var friendRequest = await _context.Friends.FindAsync(request.FriendId);
