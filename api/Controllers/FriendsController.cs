@@ -20,6 +20,40 @@ namespace api.Controllers
             _context = context;
         }
 
+        [HttpGet("all-with-status/{userId}")]
+        public async Task<ActionResult> GetAllUsersWithStatus(int userId)
+        {
+            try
+            {
+                var users = await _context.Users
+                    .Where(u => u.UserId != userId)
+                    .Select(u => new {
+                        u.UserId,
+                        u.Username,
+                        u.ProfilePicture,
+                        FriendStatus = _context.Friends
+                            .Where(f => (f.UserId1 == userId && f.UserId2 == u.UserId) ||
+                                        (f.UserId1 == u.UserId && f.UserId2 == userId))
+                            .Select(f => f.Status)
+                            .FirstOrDefault() ?? "None" // If no relation, set as "None"
+                    })
+                    .ToListAsync();
+
+                Console.WriteLine("All users with friend status being sent to frontend:");
+                foreach (var user in users)
+                {
+                    Console.WriteLine($"UserId: {user.UserId}, Username: {user.Username}, Status: {user.FriendStatus}");
+                }
+
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Error fetching users with friend status for user ID {userId}: {ex.Message}");
+                return StatusCode(500, "An error occurred while fetching users with status.");
+            }
+        }
+
         // Endpoint to get friend requests for a user
         [HttpGet("requests/{userId}")]
         public async Task<ActionResult> GetFriendRequests(int userId)
@@ -193,14 +227,14 @@ namespace api.Controllers
                 {
                     _context.Friends.Remove(friendRequest);
                     await _context.SaveChangesAsync();
-                    return Ok("Friend request removed.");
+                    return Ok("Friend removed.");
                 }
-                return BadRequest("Unable to remove friend request.");
+                return BadRequest("Unable to remove friend.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] Error removing friend request: {ex.Message}");
-                return StatusCode(500, "An error occurred while removing the friend request.");
+                Console.WriteLine($"[ERROR] Error removing friend: {ex.Message}");
+                return StatusCode(500, "An error occurred while removing the friend.");
             }
         }
 
