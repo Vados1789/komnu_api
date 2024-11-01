@@ -145,5 +145,56 @@ namespace api.Controllers
                 return StatusCode(500, "An internal server error occurred while deleting the post.");
             }
         }
+
+        // PUT: api/posts/{id}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdatePost(int id, [FromForm] UpdatePostDto updatePostDto)
+        {
+            try
+            {
+                var post = await _context.Posts.FindAsync(id);
+                if (post == null)
+                {
+                    return NotFound("Post not found.");
+                }
+
+                post.Content = updatePostDto.Content ?? post.Content;
+
+                // If a new image is provided, save it and update the image path
+                if (updatePostDto.Image != null)
+                {
+                    var extension = Path.GetExtension(updatePostDto.Image.FileName).ToLower();
+                    if (!Array.Exists(allowedExtensions, ext => ext == extension))
+                    {
+                        return BadRequest("Unsupported file type. Only .jpg, .jpeg, .png, and .gif are allowed.");
+                    }
+
+                    var fileName = Path.GetRandomFileName() + extension;
+                    var imagesFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+                    var filePath = Path.Combine(imagesFolder, fileName);
+
+                    Directory.CreateDirectory(imagesFolder);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await updatePostDto.Image.CopyToAsync(stream);
+                    }
+
+                    // Update the post's image path with the new file
+                    post.ImagePath = $"/images/{fileName}";
+                }
+
+                _context.Entry(post).State = EntityState.Modified;
+                await _context.SaveChangesAsync();
+
+                return NoContent(); // Return no content on successful update
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating post: {ex.Message}");
+                return StatusCode(500, "An internal server error occurred while updating the post.");
+            }
+        }
+
     }
 }
