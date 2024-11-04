@@ -51,8 +51,10 @@ public class CommentsController : ControllerBase
     public async Task<IActionResult> GetCommentsByPost(int postId)
     {
         var comments = await _context.Comments
-            .Where(c => c.PostId == postId)
+            .Where(c => c.PostId == postId && c.ParentCommentId == null) // Fetch only top-level comments
             .Include(c => c.User) // Include user info
+            .Include(c => c.Replies) // Include replies
+                .ThenInclude(r => r.User) // Include user info for replies
             .Select(c => new CommentDto
             {
                 CommentId = c.CommentId,
@@ -60,7 +62,17 @@ public class CommentsController : ControllerBase
                 UserId = c.UserId,
                 Content = c.Content,
                 CreatedAt = c.CreatedAt,
-                Username = c.User.Username // Assuming User has a Username field
+                Username = c.User.Username,
+                Replies = c.Replies.Select(r => new CommentDto // Map replies to CommentDto
+                {
+                    CommentId = r.CommentId,
+                    PostId = r.PostId,
+                    UserId = r.UserId,
+                    Content = r.Content,
+                    CreatedAt = r.CreatedAt,
+                    Username = r.User.Username,
+                    ParentCommentId = r.ParentCommentId
+                }).ToList()
             })
             .ToListAsync();
 
@@ -81,7 +93,8 @@ public class CommentsController : ControllerBase
             PostId = createCommentDto.PostId,
             UserId = createCommentDto.UserId,
             Content = createCommentDto.Content,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            ParentCommentId = createCommentDto.ParentCommentId // Set ParentCommentId if it's a reply
         };
 
         _context.Comments.Add(comment);
@@ -93,7 +106,8 @@ public class CommentsController : ControllerBase
             PostId = comment.PostId,
             UserId = comment.UserId,
             Content = comment.Content,
-            CreatedAt = comment.CreatedAt
+            CreatedAt = comment.CreatedAt,
+            ParentCommentId = comment.ParentCommentId
         };
 
         return CreatedAtAction(nameof(GetCommentsByPost), new { postId = comment.PostId }, commentDto);
