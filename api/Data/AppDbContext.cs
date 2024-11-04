@@ -41,6 +41,24 @@ namespace api.Data
                 .Property(f => f.RequestedAt)
                 .HasDefaultValueSql("GETDATE()")
                 .HasColumnType("datetime");
+
+            modelBuilder.Entity<Comment>()
+                .HasOne(c => c.Post)
+                .WithMany(p => p.Comments)  // Assuming Post has a Comments collection
+                .HasForeignKey(c => c.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Comment>()
+                .HasOne(c => c.User)
+                .WithMany(u => u.Comments)  // Assuming User has a Comments collection
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure default value for CreatedAt in Comment entity
+            modelBuilder.Entity<Comment>()
+                .Property(c => c.CreatedAt)
+                .HasDefaultValueSql("GETDATE()")
+                .HasColumnType("datetime");
         }
     }
 }

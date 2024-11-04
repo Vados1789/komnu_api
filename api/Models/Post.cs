@@ -1,5 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace api.Models
 {
@@ -22,8 +24,11 @@ namespace api.Models
         [Column("created_at")]
         public DateTime CreatedAt { get; set; }
 
-        // Add the User navigation property
+        // Navigation property to link back to User
         [ForeignKey("UserId")]
         public User User { get; set; }
+
+        // Navigation property for Comments
+        public ICollection<Comment> Comments { get; set; } = new List<Comment>();
     }
 }
