@@ -120,4 +120,19 @@ public class CommentsController : ControllerBase
         var count = await _context.Comments.CountAsync(c => c.PostId == postId);
         return Ok(count);
     }
+
+    [HttpDelete("{commentId}")]
+    public async Task<IActionResult> DeleteComment(int commentId)
+    {
+        var comment = await _context.Comments.FindAsync(commentId);
+        if (comment == null)
+        {
+            return NotFound();
+        }
+
+        _context.Comments.Remove(comment);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
 }
