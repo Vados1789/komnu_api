@@ -78,6 +78,7 @@ public class CommentsController : ControllerBase
             Content = comment.Content,
             CreatedAt = comment.CreatedAt,
             Username = comment.User?.Username,
+            ProfileImagePath = comment.User?.ProfilePicture,
             Replies = allComments
                 .Where(r => r.ParentCommentId == comment.CommentId) // Find replies with the current comment's ID as their parent
                 .Select(r => MapCommentWithReplies(r, allComments)) // Recursively map each reply
