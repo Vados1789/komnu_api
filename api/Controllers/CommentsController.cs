@@ -140,8 +140,15 @@ public class CommentsController : ControllerBase
         }
 
         _context.Comments.Remove(comment);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        try
+        {
+            await _context.SaveChangesAsync();
+            return NoContent(); // Indicates successful deletion
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting comment: {ex.Message}");
+            return StatusCode(500, "Internal server error");
+        }
     }
 }
