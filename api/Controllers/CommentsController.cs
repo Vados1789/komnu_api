@@ -50,34 +50,42 @@ public class CommentsController : ControllerBase
     [HttpGet("{postId}")]
     public async Task<IActionResult> GetCommentsByPost(int postId)
     {
-        var comments = await _context.Comments
-            .Where(c => c.PostId == postId && c.ParentCommentId == null) // Fetch only top-level comments
-            .Include(c => c.User) // Include user info
-            .Include(c => c.Replies) // Include replies
-                .ThenInclude(r => r.User) // Include user info for replies
-            .Select(c => new CommentDto
-            {
-                CommentId = c.CommentId,
-                PostId = c.PostId,
-                UserId = c.UserId,
-                Content = c.Content,
-                CreatedAt = c.CreatedAt,
-                Username = c.User.Username,
-                Replies = c.Replies.Select(r => new CommentDto // Map replies to CommentDto
-                {
-                    CommentId = r.CommentId,
-                    PostId = r.PostId,
-                    UserId = r.UserId,
-                    Content = r.Content,
-                    CreatedAt = r.CreatedAt,
-                    Username = r.User.Username,
-                    ParentCommentId = r.ParentCommentId
-                }).ToList()
-            })
+        // Fetch all comments related to the post, including the User and Replies
+        var allComments = await _context.Comments
+            .Where(c => c.PostId == postId)
+            .Include(c => c.User) // Include user information
+            .Include(c => c.Replies)
+                .ThenInclude(r => r.User) // Include user information for replies
             .ToListAsync();
 
-        return Ok(comments);
+        // Filter top-level comments (ParentCommentId is null)
+        var topLevelComments = allComments
+            .Where(c => c.ParentCommentId == null)
+            .Select(c => MapCommentWithReplies(c, allComments))
+            .ToList();
+
+        return Ok(topLevelComments);
     }
+
+    // Recursive function to map comments with their nested replies
+    private CommentDto MapCommentWithReplies(Comment comment, List<Comment> allComments)
+    {
+        return new CommentDto
+        {
+            CommentId = comment.CommentId,
+            PostId = comment.PostId,
+            UserId = comment.UserId,
+            Content = comment.Content,
+            CreatedAt = comment.CreatedAt,
+            Username = comment.User?.Username,
+            Replies = allComments
+                .Where(r => r.ParentCommentId == comment.CommentId) // Find replies with the current comment's ID as their parent
+                .Select(r => MapCommentWithReplies(r, allComments)) // Recursively map each reply
+                .ToList()
+        };
+    }
+
+
 
     // POST: api/comments
     [HttpPost]
