@@ -128,12 +128,25 @@ namespace api.Controllers
         {
             try
             {
-                var post = await _context.Posts.FindAsync(id);
+                var post = await _context.Posts.Include(p => p.Comments).FirstOrDefaultAsync(p => p.PostId == id);
+
                 if (post == null)
                 {
                     return NotFound("Post not found.");
                 }
 
+                // Delete image file if it exists
+                if (!string.IsNullOrEmpty(post.ImagePath))
+                {
+                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", post.ImagePath.TrimStart('/'));
+                    if (System.IO.File.Exists(filePath))
+                    {
+                        System.IO.File.Delete(filePath);
+                    }
+                }
+
+                // Remove comments and the post
+                _context.Comments.RemoveRange(post.Comments);
                 _context.Posts.Remove(post);
                 await _context.SaveChangesAsync();
 
@@ -145,6 +158,7 @@ namespace api.Controllers
                 return StatusCode(500, "An internal server error occurred while deleting the post.");
             }
         }
+
 
         // PUT: api/posts/{id}
         [HttpPut("{id}")]
