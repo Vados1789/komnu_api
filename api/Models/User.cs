@@ -43,5 +43,6 @@ namespace api.Models
 
         // Navigation property for Comments
         public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+        public ICollection<PostReaction> PostReactions { get; set; } = new List<PostReaction>();
     }
 }

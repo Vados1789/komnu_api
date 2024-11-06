@@ -22,6 +22,7 @@ namespace api.Data
         public DbSet<Group> Groups { get; set; }
         public DbSet<GroupMember> GroupMembers { get; set; }
         public DbSet<TwoFaToken> TwoFaTokens { get; set; }
+        public DbSet<PostReaction> PostReactions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -59,6 +60,18 @@ namespace api.Data
                 .Property(c => c.CreatedAt)
                 .HasDefaultValueSql("GETDATE()")
                 .HasColumnType("datetime");
+
+            modelBuilder.Entity<PostReaction>()
+                .HasOne(pr => pr.Post)
+                .WithMany(p => p.PostReactions)
+                .HasForeignKey(pr => pr.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PostReaction>()
+                .HasOne(pr => pr.User)
+                .WithMany(u => u.PostReactions)
+                .HasForeignKey(pr => pr.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
