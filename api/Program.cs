@@ -57,6 +57,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapHub<PostHub>("/postHub");
+app.MapHub<CommentHub>("/commentHub");
 app.MapControllers();
 
 app.Run();

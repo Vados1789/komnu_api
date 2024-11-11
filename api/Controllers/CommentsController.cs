@@ -7,16 +7,20 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using api.HubsAll;
+using Microsoft.AspNetCore.SignalR;
 
 [ApiController]
 [Route("api/[controller]")]
 public class CommentsController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly IHubContext<CommentHub> _commentHub;
 
-    public CommentsController(AppDbContext context)
+    public CommentsController(AppDbContext context, IHubContext<CommentHub> commentHub)
     {
         _context = context;
+        _commentHub = commentHub;
     }
 
     // GET: api/comments/post/{postId}
@@ -45,12 +49,10 @@ public class CommentsController : ControllerBase
         return Ok(postDto);
     }
 
-
     // GET: api/comments/{postId}
     [HttpGet("{postId}")]
     public async Task<IActionResult> GetCommentsByPost(int postId)
     {
-        // Fetch all comments related to the post, including the User and Replies
         var allComments = await _context.Comments
             .Where(c => c.PostId == postId)
             .Include(c => c.User) // Include user information
@@ -58,7 +60,6 @@ public class CommentsController : ControllerBase
                 .ThenInclude(r => r.User) // Include user information for replies
             .ToListAsync();
 
-        // Filter top-level comments (ParentCommentId is null)
         var topLevelComments = allComments
             .Where(c => c.ParentCommentId == null)
             .Select(c => MapCommentWithReplies(c, allComments))
@@ -80,13 +81,11 @@ public class CommentsController : ControllerBase
             Username = comment.User?.Username,
             ProfileImagePath = comment.User?.ProfilePicture,
             Replies = allComments
-                .Where(r => r.ParentCommentId == comment.CommentId) // Find replies with the current comment's ID as their parent
-                .Select(r => MapCommentWithReplies(r, allComments)) // Recursively map each reply
+                .Where(r => r.ParentCommentId == comment.CommentId)
+                .Select(r => MapCommentWithReplies(r, allComments))
                 .ToList()
         };
     }
-
-
 
     // POST: api/comments
     [HttpPost]
@@ -103,11 +102,29 @@ public class CommentsController : ControllerBase
             UserId = createCommentDto.UserId,
             Content = createCommentDto.Content,
             CreatedAt = DateTime.UtcNow,
-            ParentCommentId = createCommentDto.ParentCommentId // Set ParentCommentId if it's a reply
+            ParentCommentId = createCommentDto.ParentCommentId
         };
 
         _context.Comments.Add(comment);
         await _context.SaveChangesAsync();
+
+        // Load the user info to include in the broadcasted comment
+        var user = await _context.Users.FindAsync(comment.UserId);
+        var broadcastComment = new
+        {
+            comment.CommentId,
+            comment.PostId,
+            comment.UserId,
+            comment.Content,
+            comment.CreatedAt,
+            comment.ParentCommentId,
+            Username = user?.Username,
+            ProfileImagePath = user?.ProfilePicture
+        };
+
+        // Broadcast the new comment to all clients
+        await _commentHub.Clients.All.SendAsync("ReceiveNewComment", broadcastComment);
+        Console.WriteLine($"Broadcasted new comment to all clients: {broadcastComment.CommentId}, Content: {broadcastComment.Content}");
 
         var commentDto = new CommentDto
         {
@@ -116,7 +133,9 @@ public class CommentsController : ControllerBase
             UserId = comment.UserId,
             Content = comment.Content,
             CreatedAt = comment.CreatedAt,
-            ParentCommentId = comment.ParentCommentId
+            ParentCommentId = comment.ParentCommentId,
+            Username = user?.Username,
+            ProfileImagePath = user?.ProfilePicture
         };
 
         return CreatedAtAction(nameof(GetCommentsByPost), new { postId = comment.PostId }, commentDto);
@@ -130,6 +149,7 @@ public class CommentsController : ControllerBase
         return Ok(count);
     }
 
+    // DELETE: api/comments/{commentId}
     [HttpDelete("{commentId}")]
     public async Task<IActionResult> DeleteComment(int commentId)
     {
@@ -143,6 +163,11 @@ public class CommentsController : ControllerBase
         try
         {
             await _context.SaveChangesAsync();
+
+            // Broadcast the deletion to all clients
+            await _commentHub.Clients.All.SendAsync("DeleteComment", commentId);
+            Console.WriteLine($"Broadcasted delete event for comment {commentId}");
+
             return NoContent(); // Indicates successful deletion
         }
         catch (Exception ex)
