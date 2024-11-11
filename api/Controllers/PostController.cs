@@ -117,8 +117,14 @@ namespace api.Controllers
                 _context.Posts.Add(newPost);
                 await _context.SaveChangesAsync();
 
+                // Load the User data for the new post
+                var postWithUser = await _context.Posts
+                    .Include(p => p.User)
+                    .FirstOrDefaultAsync(p => p.PostId == newPost.PostId);
+
                 // Broadcast the new post to all connected clients
-                await _postHub.Clients.All.SendAsync("ReceiveNewPost", newPost);
+                Console.WriteLine($"[INFO] Broadcasting new post with ID {newPost.PostId} to all clients.");
+                await _postHub.Clients.All.SendAsync("ReceiveNewPost", postWithUser);
 
                 return CreatedAtAction(nameof(GetPostById), new { id = newPost.PostId }, newPost);
             }
