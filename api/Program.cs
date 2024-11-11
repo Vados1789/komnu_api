@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using api.HubsAll;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Register EmailService for dependency injection
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 builder.Services.AddTransient<EmailService>();
+
+// Register SignalR
+builder.Services.AddSignalR();
 
 // Add CORS to allow requests from your React Native app
 builder.Services.AddCors(options =>
@@ -52,6 +56,7 @@ app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 app.UseAuthorization();
 
+app.MapHub<PostHub>("/postHub");
 app.MapControllers();
 
 app.Run();

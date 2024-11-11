@@ -2,12 +2,14 @@
 using Microsoft.EntityFrameworkCore;
 using api.Data;
 using api.Models;
+using api.HubsAll;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using api.DTOs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace api.Controllers
 {
@@ -16,11 +18,13 @@ namespace api.Controllers
     public class PostsController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IHubContext<PostHub> _postHub;
         private readonly string[] allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
 
-        public PostsController(AppDbContext context)
+        public PostsController(AppDbContext context, IHubContext<PostHub> postHub)
         {
             _context = context;
+            _postHub = postHub;
         }
 
         // GET: api/posts
@@ -112,6 +116,9 @@ namespace api.Controllers
 
                 _context.Posts.Add(newPost);
                 await _context.SaveChangesAsync();
+
+                // Broadcast the new post to all connected clients
+                await _postHub.Clients.All.SendAsync("ReceiveNewPost", newPost);
 
                 return CreatedAtAction(nameof(GetPostById), new { id = newPost.PostId }, newPost);
             }

@@ -2,9 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using api.Data;
 using api.Models;
+using api.HubsAll;
 using System.Linq;
 using System.Threading.Tasks;
 using api.DTOs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace api.Controllers
 {
@@ -13,10 +15,12 @@ namespace api.Controllers
     public class PostReactionController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IHubContext<PostHub> _postHub;
 
-        public PostReactionController(AppDbContext context)
+        public PostReactionController(AppDbContext context, IHubContext<PostHub> postHub)
         {
             _context = context;
+            _postHub = postHub;
         }
 
         // GET: api/post-reactions/{postId}
@@ -86,6 +90,13 @@ namespace api.Controllers
 
             var likeCount = await _context.PostReactions.CountAsync(r => r.PostId == reactionDto.PostId && r.ReactionType == "like");
             var dislikeCount = await _context.PostReactions.CountAsync(r => r.PostId == reactionDto.PostId && r.ReactionType == "dislike");
+
+            await _postHub.Clients.All.SendAsync("ReceiveReactionUpdate", new
+            {
+                postId = reactionDto.PostId,
+                likeCount,
+                dislikeCount
+            });
 
             return Ok(new { likeCount, dislikeCount });
         }
