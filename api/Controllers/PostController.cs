@@ -123,7 +123,7 @@ namespace api.Controllers
                     .FirstOrDefaultAsync(p => p.PostId == newPost.PostId);
 
                 // Broadcast the new post to all connected clients
-                Console.WriteLine($"[INFO] Broadcasting new post with ID {newPost.PostId} to all clients.");
+                Console.WriteLine($"BOB new Broadcasting new post with ID {newPost.PostId} to all clients.");
                 await _postHub.Clients.All.SendAsync("ReceiveNewPost", postWithUser);
 
                 return CreatedAtAction(nameof(GetPostById), new { id = newPost.PostId }, newPost);
@@ -163,6 +163,10 @@ namespace api.Controllers
                 _context.Posts.Remove(post);
                 await _context.SaveChangesAsync();
 
+                // Broadcast post deletion to all clients
+                Console.WriteLine($"BOB Delete Post with ID {id} deleted.");
+                await _postHub.Clients.All.SendAsync("ReceivePostDeleted", id);
+
                 return NoContent();
             }
             catch (Exception ex)
@@ -185,7 +189,11 @@ namespace api.Controllers
                     return NotFound("Post not found.");
                 }
 
-                post.Content = updatePostDto.Content ?? post.Content;
+                // Only update the content if provided
+                if (!string.IsNullOrEmpty(updatePostDto.Content))
+                {
+                    post.Content = updatePostDto.Content;
+                }
 
                 // If a new image is provided, save it and update the image path
                 if (updatePostDto.Image != null)
@@ -211,8 +219,12 @@ namespace api.Controllers
                     post.ImagePath = $"/images/{fileName}";
                 }
 
+                // Save changes to the database
                 _context.Entry(post).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
+
+                // Optionally, broadcast the post update to all clients
+                await _postHub.Clients.All.SendAsync("ReceivePostUpdated", post);
 
                 return NoContent(); // Return no content on successful update
             }
@@ -222,6 +234,7 @@ namespace api.Controllers
                 return StatusCode(500, "An internal server error occurred while updating the post.");
             }
         }
+
 
     }
 }
