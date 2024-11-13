@@ -19,21 +19,23 @@ namespace api.Models
         [Column("description")]
         public string Description { get; set; }
 
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; }
-
         [Column("image_url")]
         public string ImageUrl { get; set; }
 
-        // Navigation properties for relationships
-        public ICollection<GroupMember> Members { get; set; } = new List<GroupMember>(); // Group members
-        public ICollection<GroupPost> GroupPosts { get; set; } = new List<GroupPost>(); // Posts made in this group
-        public ICollection<GroupComment> GroupComments { get; set; } = new List<GroupComment>(); // Comments in this group
-        public ICollection<GroupReaction> GroupReactions { get; set; } = new List<GroupReaction>(); // Reactions to posts/comments in this group
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; }
 
-        // Optional: This can track the group owner/creator if needed
-        [ForeignKey("CreatorUserId")]
-        public int? CreatorUserId { get; set; } // Optional, if you want to track the creator/owner
-        public User Creator { get; set; } // Navigation property to the user who created the group
+        // New field for the creator
+        [Column("creator_user_id")]
+        public int CreatorUserId { get; set; }
+
+        // Navigation property for the creator (User)
+        public User Creator { get; set; }
+
+        // Navigation properties for relationships
+        public ICollection<GroupMember> Members { get; set; } = new List<GroupMember>();
+        public ICollection<GroupPost> GroupPosts { get; set; } = new List<GroupPost>();
+        public ICollection<GroupComment> GroupComments { get; set; } = new List<GroupComment>();
+        public ICollection<GroupReaction> GroupReactions { get; set; } = new List<GroupReaction>();
     }
 }

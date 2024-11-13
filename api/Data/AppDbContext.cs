@@ -123,6 +123,12 @@ namespace api.Data
                 .WithMany(u => u.GroupReactions)
                 .HasForeignKey(gr => gr.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Group>()
+                .HasOne(g => g.Creator)
+                .WithMany()
+                .HasForeignKey(g => g.CreatorUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

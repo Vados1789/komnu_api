@@ -1,8 +1,10 @@
 ﻿using api.Data;
 using api.Models;
+using api.DTOs;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace api.Controllers
@@ -31,20 +33,20 @@ namespace api.Controllers
 
         // Create a new group
         [HttpPost("create")]
-        public async Task<IActionResult> CreateGroup([FromForm] Group newGroup, IFormFile image)
+        public async Task<IActionResult> CreateGroup([FromForm] CreateGroupDto createGroupDto)
         {
-            Console.WriteLine($"[INFO] Creating a new group: {newGroup.GroupName}");
+            Console.WriteLine($"[INFO] Creating a new group: {createGroupDto.GroupName}, by user {createGroupDto.UserId}");
 
-            if (newGroup == null || string.IsNullOrEmpty(newGroup.GroupName))
+            if (createGroupDto == null || string.IsNullOrEmpty(createGroupDto.GroupName))
             {
                 return BadRequest("Group name is required.");
             }
 
             // Handle the image file if it exists
             string imagePath = "";
-            if (image != null)
+            if (createGroupDto.Image != null)
             {
-                var extension = Path.GetExtension(image.FileName).ToLower();
+                var extension = Path.GetExtension(createGroupDto.Image.FileName).ToLower();
                 if (!Array.Exists(new[] { ".jpg", ".jpeg", ".png", ".gif" }, ext => ext == extension))
                 {
                     return BadRequest("Unsupported file type. Only .jpg, .jpeg, .png, and .gif are allowed.");
@@ -58,20 +60,37 @@ namespace api.Controllers
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
-                    await image.CopyToAsync(stream);
+                    await createGroupDto.Image.CopyToAsync(stream);
                 }
 
                 imagePath = $"/images/{fileName}";
             }
 
+            // Create the group object from the DTO
+            var newGroup = new Group
+            {
+                GroupName = createGroupDto.GroupName,
+                Description = createGroupDto.Description,
+                ImageUrl = imagePath,
+                CreatedAt = DateTime.Now,
+                CreatorUserId = createGroupDto.UserId // Set the creator user ID from the DTO
+            };
+
             // Save the new group
-            newGroup.ImageUrl = imagePath;
             _context.Groups.Add(newGroup);
+            await _context.SaveChangesAsync();
+
+            // Optionally: Add the creator as a member of the group
+            var groupMember = new GroupMember
+            {
+                GroupId = newGroup.GroupId,
+                UserId = createGroupDto.UserId
+            };
+            _context.GroupMembers.Add(groupMember);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetAllGroups), new { id = newGroup.GroupId }, newGroup);
         }
-
 
         // Join a group (via GroupMember)
         [HttpPost("join/{groupId}")]
