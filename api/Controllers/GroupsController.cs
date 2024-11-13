@@ -23,7 +23,7 @@ namespace api.Controllers
         public async Task<IActionResult> GetAllGroups()
         {
             var groups = await _context.Groups
-                .Include(g => g.GroupMembers) // Include members
+                .Include(g => g.Members) // Include members
                 .ToListAsync();
 
             return Ok(groups);
