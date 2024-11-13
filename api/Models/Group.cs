@@ -22,6 +22,9 @@ namespace api.Models
         [Column("created_at")]
         public DateTime CreatedAt { get; set; }
 
+        [Column("image_url")]
+        public string ImageUrl { get; set; }
+
         // Navigation properties for relationships
         public ICollection<GroupMember> Members { get; set; } = new List<GroupMember>(); // Group members
         public ICollection<GroupPost> GroupPosts { get; set; } = new List<GroupPost>(); // Posts made in this group

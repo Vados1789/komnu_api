@@ -30,19 +30,48 @@ namespace api.Controllers
         }
 
         // Create a new group
-        [HttpPost]
-        public async Task<IActionResult> CreateGroup([FromBody] Group newGroup)
+        [HttpPost("create")]
+        public async Task<IActionResult> CreateGroup([FromForm] Group newGroup, IFormFile image)
         {
+            Console.WriteLine($"[INFO] Creating a new group: {newGroup.GroupName}");
+
             if (newGroup == null || string.IsNullOrEmpty(newGroup.GroupName))
             {
                 return BadRequest("Group name is required.");
             }
 
+            // Handle the image file if it exists
+            string imagePath = "";
+            if (image != null)
+            {
+                var extension = Path.GetExtension(image.FileName).ToLower();
+                if (!Array.Exists(new[] { ".jpg", ".jpeg", ".png", ".gif" }, ext => ext == extension))
+                {
+                    return BadRequest("Unsupported file type. Only .jpg, .jpeg, .png, and .gif are allowed.");
+                }
+
+                var fileName = Path.GetRandomFileName() + extension;
+                var imagesFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+                var filePath = Path.Combine(imagesFolder, fileName);
+
+                Directory.CreateDirectory(imagesFolder);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await image.CopyToAsync(stream);
+                }
+
+                imagePath = $"/images/{fileName}";
+            }
+
+            // Save the new group
+            newGroup.ImageUrl = imagePath;
             _context.Groups.Add(newGroup);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetAllGroups), new { id = newGroup.GroupId }, newGroup);
         }
+
 
         // Join a group (via GroupMember)
         [HttpPost("join/{groupId}")]
