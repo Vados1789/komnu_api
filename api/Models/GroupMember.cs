@@ -20,7 +20,7 @@ namespace api.Models
         [Column("joined_at")]
         public DateTime JoinedAt { get; set; }
 
-        //public Group Group { get; set; }
-        //public User User { get; set; }
+        public Group Group { get; set; }
+        public User User { get; set; }
     }
 }

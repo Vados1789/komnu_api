@@ -44,5 +44,9 @@ namespace api.Models
         // Navigation property for Comments
         public ICollection<Comment> Comments { get; set; } = new List<Comment>();
         public ICollection<PostReaction> PostReactions { get; set; } = new List<PostReaction>();
+        public ICollection<GroupMember> GroupMemberships { get; set; } = new List<GroupMember>(); // Groups user is part of
+        public ICollection<GroupPost> GroupPosts { get; set; } = new List<GroupPost>(); // Posts made by the user in groups
+        public ICollection<GroupComment> GroupComments { get; set; } = new List<GroupComment>(); // Comments in groups
+        public ICollection<GroupReaction> GroupReactions { get; set; } = new List<GroupReaction>(); // Reactions in groups
     }
 }

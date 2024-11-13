@@ -21,6 +21,9 @@ namespace api.Data
         public DbSet<Event> Events { get; set; }
         public DbSet<Group> Groups { get; set; }
         public DbSet<GroupMember> GroupMembers { get; set; }
+        public DbSet<GroupPost> GroupPosts { get; set; }
+        public DbSet<GroupComment> GroupComments { get; set; }
+        public DbSet<GroupReaction> GroupReactions { get; set; }
         public DbSet<TwoFaToken> TwoFaTokens { get; set; }
         public DbSet<PostReaction> PostReactions { get; set; }
 
@@ -71,6 +74,54 @@ namespace api.Data
                 .HasOne(pr => pr.User)
                 .WithMany(u => u.PostReactions)
                 .HasForeignKey(pr => pr.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<GroupPost>()
+                .HasOne(gp => gp.Group)
+                .WithMany(g => g.GroupPosts)
+                .HasForeignKey(gp => gp.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<GroupPost>()
+                .HasOne(gp => gp.User)
+                .WithMany(u => u.GroupPosts)
+                .HasForeignKey(gp => gp.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<GroupComment>()
+                .HasOne(gc => gc.Post)
+                .WithMany(gp => gp.Comments)
+                .HasForeignKey(gc => gc.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<GroupComment>()
+                .HasOne(gc => gc.User)
+                .WithMany(u => u.GroupComments)
+                .HasForeignKey(gc => gc.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<GroupComment>()
+                .HasOne(gc => gc.ParentComment)
+                .WithMany(pc => pc.Replies)
+                .HasForeignKey(gc => gc.ParentCommentId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<GroupReaction>()
+                .HasOne(gr => gr.Post)
+                .WithMany(gp => gp.Reactions)
+                .HasForeignKey(gr => gr.PostId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<GroupReaction>()
+                .HasOne(gr => gr.Comment)
+                .WithMany(gc => gc.Reactions)
+                .HasForeignKey(gr => gr.CommentId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<GroupReaction>()
+                .HasOne(gr => gr.User)
+                .WithMany(u => u.GroupReactions)
+                .HasForeignKey(gr => gr.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }
