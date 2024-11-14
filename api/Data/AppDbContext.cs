@@ -129,6 +129,16 @@ namespace api.Data
                 .WithMany()
                 .HasForeignKey(g => g.CreatorUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Group>()
+                .Property(g => g.CreatedAt)
+                .HasDefaultValueSql("GETDATE()")
+                .HasColumnType("datetime");
+
+            modelBuilder.Entity<GroupMember>()
+                .Property(gm => gm.JoinedAt)
+                .HasDefaultValueSql("GETDATE()")
+                .HasColumnType("datetime");
         }
     }
 }

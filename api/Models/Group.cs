@@ -22,12 +22,12 @@ namespace api.Models
         [Column("image_url")]
         public string ImageUrl { get; set; }
 
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; }
-
         // New field for the creator
         [Column("creator_user_id")]
         public int CreatorUserId { get; set; }
+
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Navigation property for the creator (User)
         public User Creator { get; set; }

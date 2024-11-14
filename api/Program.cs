@@ -1,11 +1,12 @@
 using api.Data;
 using api.Services;
 using api.DTOs;
+using api.HubsAll;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using api.HubsAll;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,7 +34,14 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddControllers();
+// Add controllers with JSON options to handle circular references
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    // Preserve references to handle cycles in entity relationships
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+});
+
+// Add Swagger for API documentation
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -56,8 +64,11 @@ app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 app.UseAuthorization();
 
+// Map SignalR hubs
 app.MapHub<PostHub>("/postHub");
 app.MapHub<CommentHub>("/commentHub");
+
+// Map controllers for API routes
 app.MapControllers();
 
 app.Run();

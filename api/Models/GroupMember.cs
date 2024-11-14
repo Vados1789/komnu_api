@@ -18,7 +18,7 @@ namespace api.Models
         public int UserId { get; set; }
 
         [Column("joined_at")]
-        public DateTime JoinedAt { get; set; }
+        public DateTime JoinedAt { get; set; } = DateTime.Now;
 
         public Group Group { get; set; }
         public User User { get; set; }

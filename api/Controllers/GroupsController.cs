@@ -43,7 +43,7 @@ namespace api.Controllers
             }
 
             // Handle the image file if it exists
-            string imagePath = "";
+            string imagePath = string.Empty; // Default to an empty string if no image is provided
             if (createGroupDto.Image != null)
             {
                 var extension = Path.GetExtension(createGroupDto.Image.FileName).ToLower();
@@ -72,8 +72,8 @@ namespace api.Controllers
                 GroupName = createGroupDto.GroupName,
                 Description = createGroupDto.Description,
                 ImageUrl = imagePath,
-                CreatedAt = DateTime.Now,
-                CreatorUserId = createGroupDto.UserId // Set the creator user ID from the DTO
+                CreatorUserId = createGroupDto.UserId,
+                CreatedAt = DateTime.Now
             };
 
             // Save the new group
@@ -84,7 +84,8 @@ namespace api.Controllers
             var groupMember = new GroupMember
             {
                 GroupId = newGroup.GroupId,
-                UserId = createGroupDto.UserId
+                UserId = createGroupDto.UserId,
+                JoinedAt = DateTime.Now
             };
             _context.GroupMembers.Add(groupMember);
             await _context.SaveChangesAsync();
