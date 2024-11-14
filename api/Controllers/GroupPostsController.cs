@@ -1,4 +1,5 @@
-﻿using System;
+﻿// GroupPostsController.cs
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -29,7 +30,23 @@ namespace api.Controllers
             Console.WriteLine($"[INFO] Fetching posts for group with ID: {groupId}");
             var posts = await _context.GroupPosts
                 .Where(p => p.GroupId == groupId)
+                .Include(p => p.User) // Include user data with each post
                 .OrderByDescending(p => p.CreatedAt)
+                .Select(p => new
+                {
+                    p.PostId,
+                    p.GroupId,
+                    p.UserId,
+                    p.Content,
+                    p.ImagePath,
+                    p.CreatedAt,
+                    User = new
+                    {
+                        p.User.UserId,
+                        p.User.Username,
+                        p.User.ProfilePicture // Assuming ProfilePicture is a property in the User model
+                    }
+                })
                 .ToListAsync();
 
             if (posts == null || posts.Count == 0)
@@ -43,7 +60,6 @@ namespace api.Controllers
             return Ok(posts);
         }
 
-        // POST: api/GroupPosts/add
         // POST: api/GroupPosts/add
         [HttpPost("add")]
         public async Task<IActionResult> AddPost([FromForm] GroupPostDto newPostDto)
@@ -131,7 +147,6 @@ namespace api.Controllers
 
             return CreatedAtAction(nameof(GetGroupPosts), new { groupId = newPost.GroupId }, newPost);
         }
-
 
         // DELETE: api/GroupPosts/delete/{postId}
         [HttpDelete("delete/{postId}")]
