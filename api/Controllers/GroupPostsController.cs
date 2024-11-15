@@ -82,7 +82,7 @@ namespace api.Controllers
 
             // Handle image upload if it exists
             string imagePath = null;
-            if (newPostDto.Image != null)
+            if (newPostDto.Image != null && newPostDto.Image.Length > 0)
             {
                 Console.WriteLine("[INFO] Image detected in request.");
                 var extension = Path.GetExtension(newPostDto.Image.FileName).ToLower();
@@ -124,7 +124,7 @@ namespace api.Controllers
                 GroupId = newPostDto.GroupId,
                 UserId = newPostDto.UserId,
                 Content = newPostDto.Content,
-                ImagePath = imagePath,
+                ImagePath = imagePath, // This will be null if no image is provided
                 CreatedAt = DateTime.Now
             };
 
@@ -142,6 +142,47 @@ namespace api.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"[ERROR] Failed to save post: {ex.Message}");
+                return StatusCode(500, "Error saving post.");
+            }
+
+            return CreatedAtAction(nameof(GetGroupPosts), new { groupId = newPost.GroupId }, newPost);
+        }
+
+        // POST: api/GroupPosts/addText
+        [HttpPost("addText")]
+        public async Task<IActionResult> AddTextPost([FromBody] GroupTextPostDto newPostDto)
+        {
+            Console.WriteLine("[INFO] AddTextPost endpoint hit.");
+
+            if (newPostDto == null)
+            {
+                Console.WriteLine("[ERROR] newPostDto is null.");
+                return BadRequest("Request data is missing.");
+            }
+
+            if (string.IsNullOrEmpty(newPostDto.Content))
+            {
+                Console.WriteLine("[ERROR] Post content is empty.");
+                return BadRequest("Post content cannot be empty.");
+            }
+
+            var newPost = new GroupPost
+            {
+                GroupId = newPostDto.GroupId,
+                UserId = newPostDto.UserId,
+                Content = newPostDto.Content,
+                CreatedAt = DateTime.Now
+            };
+
+            try
+            {
+                _context.GroupPosts.Add(newPost);
+                await _context.SaveChangesAsync();
+                Console.WriteLine("[INFO] Text-only post added successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] Failed to save text-only post: {ex.Message}");
                 return StatusCode(500, "Error saving post.");
             }
 
