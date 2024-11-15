@@ -36,6 +36,5 @@ namespace api.Models
         public ICollection<GroupMember> Members { get; set; } = new List<GroupMember>();
         public ICollection<GroupPost> GroupPosts { get; set; } = new List<GroupPost>();
         public ICollection<GroupComment> GroupComments { get; set; } = new List<GroupComment>();
-        public ICollection<GroupReaction> GroupReactions { get; set; } = new List<GroupReaction>();
     }
 }
