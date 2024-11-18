@@ -1,4 +1,5 @@
 ﻿using api.Data;
+using api.DTOs;
 using api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +35,8 @@ namespace api.Controllers
 
                 var likeCount = reactions.Count(r => r.ReactionType == "like");
                 var dislikeCount = reactions.Count(r => r.ReactionType == "dislike");
+
+                Console.WriteLine($"Returning JSON response: {{ LikeCount: {likeCount}, DislikeCount: {dislikeCount} }}");
 
                 return Ok(new
                 {
@@ -77,32 +80,57 @@ namespace api.Controllers
 
         // Add or update a reaction
         [HttpPost]
-        public async Task<IActionResult> AddOrUpdateReaction([FromBody] GroupReaction newReaction)
+        public async Task<IActionResult> AddOrUpdateReaction([FromBody] PostReactionDto reactionDto)
         {
-            if (newReaction == null) return BadRequest("Invalid reaction.");
+            if (reactionDto == null || string.IsNullOrEmpty(reactionDto.ReactionType))
+                return BadRequest("Invalid reaction.");
 
+            // Check if an existing reaction from the user for the specific post already exists
             var existingReaction = await _context.GroupReactions
-                .FirstOrDefaultAsync(r => r.PostId == newReaction.PostId && r.UserId == newReaction.UserId);
+                .FirstOrDefaultAsync(r => r.PostId == reactionDto.PostId && r.UserId == reactionDto.UserId);
 
             if (existingReaction != null)
             {
-                if (existingReaction.ReactionType == newReaction.ReactionType)
+                // If the reaction type is the same, remove the reaction (toggle off)
+                if (existingReaction.ReactionType == reactionDto.ReactionType)
                 {
                     _context.GroupReactions.Remove(existingReaction);
                 }
                 else
                 {
-                    existingReaction.ReactionType = newReaction.ReactionType;
+                    // Otherwise, update the reaction type
+                    existingReaction.ReactionType = reactionDto.ReactionType;
                 }
             }
             else
             {
+                // If no existing reaction, add a new one
+                var newReaction = new GroupReaction
+                {
+                    PostId = reactionDto.PostId,
+                    UserId = reactionDto.UserId,
+                    ReactionType = reactionDto.ReactionType
+                };
                 _context.GroupReactions.Add(newReaction);
             }
 
+            // Save changes
             await _context.SaveChangesAsync();
 
-            return Ok(new { Success = true });
+            // Fetch updated like and dislike counts
+            var reactions = await _context.GroupReactions
+                .Where(r => r.PostId == reactionDto.PostId)
+                .ToListAsync();
+
+            var likeCount = reactions.Count(r => r.ReactionType == "like");
+            var dislikeCount = reactions.Count(r => r.ReactionType == "dislike");
+
+            // Return updated counts
+            return Ok(new
+            {
+                LikeCount = likeCount,
+                DislikeCount = dislikeCount
+            });
         }
     }
 }
