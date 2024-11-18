@@ -97,9 +97,12 @@ namespace api.Controllers
         [HttpPost("join/{groupId}")]
         public async Task<IActionResult> JoinGroup(int groupId, [FromBody] int userId)
         {
+            Console.WriteLine($"[JoinGroup] Request received: groupId = {groupId}, userId = {userId}");
+
             var group = await _context.Groups.FindAsync(groupId);
             if (group == null)
             {
+                Console.WriteLine("[JoinGroup] Group not found.");
                 return NotFound("Group not found.");
             }
 
@@ -108,19 +111,48 @@ namespace api.Controllers
 
             if (existingMember != null)
             {
+                Console.WriteLine("[JoinGroup] User already a member.");
                 return BadRequest("User already a member.");
             }
 
             var groupMember = new GroupMember
             {
                 GroupId = groupId,
-                UserId = userId
+                UserId = userId,
+                JoinedAt = DateTime.Now
             };
 
             _context.GroupMembers.Add(groupMember);
             await _context.SaveChangesAsync();
 
+            Console.WriteLine("[JoinGroup] User successfully joined the group.");
             return Ok("User joined the group.");
         }
+
+
+
+        // Leave a group (remove from GroupMember)
+        [HttpPost("leave/{groupId}")]
+        public async Task<IActionResult> LeaveGroup(int groupId, [FromBody] int userId)
+        {
+            Console.WriteLine($"[LeaveGroup] Request received: groupId = {groupId}, userId = {userId}");
+
+            var groupMember = await _context.GroupMembers
+                .FirstOrDefaultAsync(gm => gm.GroupId == groupId && gm.UserId == userId);
+
+            if (groupMember == null)
+            {
+                Console.WriteLine("[LeaveGroup] User is not a member of this group.");
+                return NotFound("You are not a member of this group.");
+            }
+
+            _context.GroupMembers.Remove(groupMember);
+            await _context.SaveChangesAsync();
+
+            Console.WriteLine("[LeaveGroup] User successfully left the group.");
+            return Ok("User left the group.");
+        }
+
+
     }
 }
