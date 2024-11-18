@@ -129,8 +129,6 @@ namespace api.Controllers
             return Ok("User joined the group.");
         }
 
-
-
         // Leave a group (remove from GroupMember)
         [HttpPost("leave/{groupId}")]
         public async Task<IActionResult> LeaveGroup(int groupId, [FromBody] int userId)
@@ -152,7 +150,5 @@ namespace api.Controllers
             Console.WriteLine("[LeaveGroup] User successfully left the group.");
             return Ok("User left the group.");
         }
-
-
     }
 }
