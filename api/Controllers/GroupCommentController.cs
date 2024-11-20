@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/GroupPostComments")]
     [ApiController]
     public class GroupCommentController : ControllerBase
     {
@@ -18,31 +18,54 @@ namespace api.Controllers
             _context = context;
         }
 
-        // Get comments for a post in a group
+        // Get post details with comments
         [HttpGet("post/{postId}")]
-        public async Task<IActionResult> GetCommentsForPost(int postId)
+        public async Task<IActionResult> GetPostWithComments(int postId)
         {
-            var comments = await _context.GroupComments
-                .Where(c => c.PostId == postId)
-                .Include(c => c.User) // Include user who created the comment
-                .ToListAsync();
+            // Fetch post details with user and comments
+            var post = await _context.GroupPosts
+                .Include(p => p.User) // Include User who created the post
+                .Include(p => p.Group)
+                .Include(p => p.Comments) // Include Comments for this post
+                    .ThenInclude(c => c.User) // Include the User for each comment
+                .Include(p => p.Comments) // Include Comments again to get Replies
+                    .ThenInclude(c => c.Replies) // Include Replies for each comment
+                .FirstOrDefaultAsync(p => p.PostId == postId);
 
-            return Ok(comments);
-        }
+            if (post == null)
+                return NotFound("Post not found.");
 
-        // Create a new comment for a post
-        [HttpPost]
-        public async Task<IActionResult> CreateGroupComment([FromBody] GroupComment newComment)
-        {
-            if (newComment == null || string.IsNullOrEmpty(newComment.Content))
+            // Organize comments into a nested structure
+            var nestedComments = post.Comments
+                .Where(c => c.ParentCommentId == null)
+                .Select(c => new
+                {
+                    c.CommentId,
+                    c.Content,
+                    c.CreatedAt,
+                    c.User.Username,
+                    Replies = c.Replies.Select(r => new
+                    {
+                        r.CommentId,
+                        r.Content,
+                        r.CreatedAt,
+                        r.User.Username
+                    })
+                });
+
+            // Return both post details and comments
+            return Ok(new
             {
-                return BadRequest("Comment content is required.");
-            }
-
-            _context.GroupComments.Add(newComment);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetCommentsForPost), new { postId = newComment.PostId }, newComment);
+                Post = new
+                {
+                    post.PostId,
+                    post.Content,
+                    post.CreatedAt,
+                    post.User.Username,
+                    post.ImagePath
+                },
+                Comments = nestedComments
+            });
         }
     }
 }

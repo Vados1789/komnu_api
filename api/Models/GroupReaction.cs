@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace api.Models
 {
+    [Table("group_reactions")]
     public class GroupReaction
     {
         [Key]

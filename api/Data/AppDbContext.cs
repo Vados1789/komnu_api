@@ -123,6 +123,22 @@ namespace api.Data
                 .WithMany(u => u.GroupReactions)
                 .HasForeignKey(gr => gr.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Group>()
+                .HasOne(g => g.Creator)
+                .WithMany()
+                .HasForeignKey(g => g.CreatorUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Group>()
+                .Property(g => g.CreatedAt)
+                .HasDefaultValueSql("GETDATE()")
+                .HasColumnType("datetime");
+
+            modelBuilder.Entity<GroupMember>()
+                .Property(gm => gm.JoinedAt)
+                .HasDefaultValueSql("GETDATE()")
+                .HasColumnType("datetime");
         }
     }
 }
