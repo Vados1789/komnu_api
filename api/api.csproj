@@ -33,6 +33,7 @@
 
   <ItemGroup>
     <Folder Include="Interfaces\" />
+    <Folder Include="wwwroot\images\" />
   </ItemGroup>
 
 </Project>
