@@ -14,7 +14,7 @@
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "http://10.71.106.238:5202", // Corrected IP
+      "applicationUrl": "http://10.71.106.239:5202", // Corrected IP
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -24,7 +24,7 @@
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "https://10.71.106.238:7057;http://10.71.106.238:5202", // Corrected IP
+      "applicationUrl": "https://10.71.106.239:7057;http://10.71.106.239:5202", // Corrected IP
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -33,7 +33,7 @@
       "commandName": "IISExpress",
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "http://10.71.106.238:5202", // Corrected IP
+      "applicationUrl": "http://10.71.106.239:5202", // Corrected IP
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
